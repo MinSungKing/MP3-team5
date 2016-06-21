@@ -11,13 +11,18 @@
  */
 package za.co.neilson.alarm.preferences;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 
 import za.co.neilson.alarm.Alarm;
+import za.co.neilson.alarm.AlarmActivity;
 import za.co.neilson.alarm.BaseActivity;
 import za.co.neilson.alarm.database.Database;
 import za.co.neilson.alarm.group.Group;
 import za.co.neilson.alarm.group.User;
+import za.co.neilson.alarm.login.ServerRequest;
 import za.co.neilson.alarm.preferences.AlarmPreference.Key;
 import za.co.neilson.alarm.service.AlarmServiceBroadcastReciever;
 import za.co.neilson.alarm.R;
@@ -29,6 +34,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -36,6 +42,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Vibrator;
 import android.support.v7.app.ActionBar;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,6 +58,11 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class AlarmPreferencesActivity extends BaseActivity {
 
 	ImageButton deleteButton;
@@ -62,6 +74,11 @@ public class AlarmPreferencesActivity extends BaseActivity {
 	private ListAdapter listAdapter;
 	private ListView listView;
 
+	List<NameValuePair> params;
+	SharedPreferences pref;
+
+	String email;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -69,6 +86,10 @@ public class AlarmPreferencesActivity extends BaseActivity {
 		ActionBar actionBar = getSupportActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		setContentView(R.layout.alarm_preferences);
+
+		pref = getSharedPreferences("AppPref", MODE_PRIVATE);
+		email = getIntent().getStringExtra("email");
+		Log.d("넘겨받은 이메일값은!!! " , "" + email);
 
 		Bundle bundle = getIntent().getExtras();
 		if (bundle != null && bundle.containsKey("alarm")) {
@@ -292,7 +313,6 @@ public class AlarmPreferencesActivity extends BaseActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		boolean result = super.onCreateOptionsMenu(menu);
 		menu.findItem(R.id.menu_item_new).setVisible(false);
-		menu.findItem(R.id.menu_item_join).setVisible(false);
 		return result;
 	}
 
@@ -301,7 +321,10 @@ public class AlarmPreferencesActivity extends BaseActivity {
 		switch (item.getItemId()) {
 		case R.id.menu_item_save:
 			Database.init(getApplicationContext());
+			Database.setEmail(email);
+
 			if (getMathAlarm().getId() < 1) {
+				getMathAlarm().setEmail(email);
 				Database.create(getMathAlarm());
 				Bundle bundle = getIntent().getExtras();
 				if (bundle != null && bundle.containsKey("user")) {
@@ -309,10 +332,35 @@ public class AlarmPreferencesActivity extends BaseActivity {
 					Group group = new Group(getMathAlarm(), user);
 					Database.addGroup(group);
 				}
+				params = new ArrayList<NameValuePair>();
+				params.add(new BasicNameValuePair("email", email));
+				Log.d("이메일에 뭐가들어있는거야 : ", "" + email);
+				params.add(new BasicNameValuePair("time", getMathAlarm().getAlarmTimeString()));
+				params.add(new BasicNameValuePair("difficulty", Integer.toString(getMathAlarm().getDifficulty().ordinal())));
+				params.add(new BasicNameValuePair("tone", getMathAlarm().getAlarmTonePath()));
+				params.add(new BasicNameValuePair("vibrate", Boolean.toString(getMathAlarm().getVibrate())));
+				params.add(new BasicNameValuePair("name", getMathAlarm().getAlarmName()));
+				//params.add(new BasicNameValuePair("days", Arrays.toString(getMathAlarm().getDays())));
+				for (int i = 0; i < getMathAlarm().getDays().length; i++) {
+					params.add(new BasicNameValuePair("days", getMathAlarm().getDays()[i].toString()));
+				}
+				ServerRequest sr = new ServerRequest();
+				JSONObject json = sr.getJSON("http://168.188.123.218:8080/alarmdata", params);
+				if (json != null) {
+					try {
+						String jsonstr = json.getString("response");
+						//JSONObject json2 = sr.getJSON("http://168.188.123.218:8080/useralarm", params);
+						
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+				}
+
 			} else {
 				Database.update(getMathAlarm());
-			}
+				Database.setEmail(email);
 
+			}
 
 			callMathAlarmScheduleService();
 			Toast.makeText(AlarmPreferencesActivity.this, getMathAlarm().getTimeUntilNextAlarmMessage(), Toast.LENGTH_LONG).show();
@@ -328,9 +376,18 @@ public class AlarmPreferencesActivity extends BaseActivity {
 				public void onClick(DialogInterface dialog, int which) {
 
 					Database.init(getApplicationContext());
+					Database.setEmail(email);
+
 					if (getMathAlarm().getId() < 1) {
 						// Alarm not saved
 					} else {
+						params = new ArrayList<NameValuePair>();
+						params.add(new BasicNameValuePair("email", email));
+						params.add(new BasicNameValuePair("time", alarm.getAlarmTimeString()));
+						Log.d("이메일에 뭐가들어간거야 : ",""+email);
+						ServerRequest sr = new ServerRequest();
+						JSONObject json = sr.getJSON("http://168.188.123.218:8080/deletealarm", params);
+
 						Database.deleteEntry(alarm);
 						callMathAlarmScheduleService();
 					}

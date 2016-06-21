@@ -23,14 +23,30 @@ import java.util.List;
 
 import za.co.neilson.alarm.Alarm;
 import za.co.neilson.alarm.Alarm.Difficulty;
+import za.co.neilson.alarm.AlarmActivity;
 import za.co.neilson.alarm.group.Group;
 import za.co.neilson.alarm.group.User;
+import za.co.neilson.alarm.login.ServerRequest;
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.provider.ContactsContract;
+import android.util.Log;
+import android.util.Pair;
+import android.widget.Toast;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONException;
+import org.json.JSONObject;
+import android.content.SharedPreferences;
+
 
 /* 
  * usage:  
@@ -59,6 +75,16 @@ public class Database extends SQLiteOpenHelper {
 	public static final String COLUMN_ALARM_VIBRATE = "alarm_vibrate";
 	public static final String COLUMN_ALARM_NAME = "alarm_name";
 
+	public static void setEmail(String email) {
+		Database.email = email;
+	}
+
+	public static String getEmail(){
+		return Database.email;
+	}
+
+	private static String email = null;
+
 	public static void addGroup(Group group){
 		groups.add(group);
 	}
@@ -82,6 +108,8 @@ public class Database extends SQLiteOpenHelper {
 		}
 		return null;
 	}
+
+
 	
 	public static void init(Context context) {
 		if (null == instance) {
@@ -91,7 +119,7 @@ public class Database extends SQLiteOpenHelper {
 
 	public static SQLiteDatabase getDatabase() {
 		if (null == database) {
-			database = instance.getWritableDatabase();
+				database = instance.getWritableDatabase();
 		}
 		return database;
 	}
@@ -104,30 +132,68 @@ public class Database extends SQLiteOpenHelper {
 		instance = null;
 	}
 
+
 	public static long create(Alarm alarm) {
 		ContentValues cv = new ContentValues();
 		cv.put(COLUMN_ALARM_ACTIVE, alarm.getAlarmActive());
 		cv.put(COLUMN_ALARM_TIME, alarm.getAlarmTimeString());
-		
+
 		try {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		    ObjectOutputStream oos = null;
-		    oos = new ObjectOutputStream(bos);
-		    oos.writeObject(alarm.getDays());
-		    byte[] buff = bos.toByteArray();
-		    
-		    cv.put(COLUMN_ALARM_DAYS, buff);
-		    
+			ObjectOutputStream oos = null;
+			oos = new ObjectOutputStream(bos);
+			oos.writeObject(alarm.getDays());
+			byte[] buff = bos.toByteArray();
+			cv.put(COLUMN_ALARM_DAYS, buff);
+
 		} catch (Exception e){
-		}		
-		
+		}
+		Log.v("Alarm Active : ", "" + alarm.getAlarmActive());
+		Log.v("Alarm Name : ", "" + alarm.getAlarmName());
+
 		cv.put(COLUMN_ALARM_DIFFICULTY, alarm.getDifficulty().ordinal());
 		cv.put(COLUMN_ALARM_TONE, alarm.getAlarmTonePath());
 		cv.put(COLUMN_ALARM_VIBRATE, alarm.getVibrate());
 		cv.put(COLUMN_ALARM_NAME, alarm.getAlarmName());
-		
+
 		return getDatabase().insert(ALARM_TABLE, null, cv);
 	}
+
+
+
+
+	public static long create(String name, String time,  String tone, int difficulty, boolean vibrate, String[] days) {
+		ContentValues cv = new ContentValues();
+		cv.put(COLUMN_ALARM_ACTIVE, true);
+		cv.put(COLUMN_ALARM_TIME, time);
+		Alarm.Day[] enumDays = new Alarm.Day[days.length];
+
+		for(int i=0; i < days.length; i++){
+			enumDays[i] = Alarm.Day.valueOf(days[i]);
+		}
+
+		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = null;
+			oos = new ObjectOutputStream(bos);
+			oos.writeObject(enumDays);
+			byte[] buff = bos.toByteArray();
+
+			cv.put(COLUMN_ALARM_DAYS, buff);
+
+		} catch (Exception e){
+		}
+
+		cv.put(COLUMN_ALARM_DIFFICULTY, difficulty);
+		cv.put(COLUMN_ALARM_TONE, tone);
+		cv.put(COLUMN_ALARM_VIBRATE, vibrate);
+		cv.put(COLUMN_ALARM_NAME, name);
+
+		return getDatabase().insert(ALARM_TABLE, null, cv);
+	}
+
+
+
 	public static int update(Alarm alarm) {
 		ContentValues cv = new ContentValues();
 		cv.put(COLUMN_ALARM_ACTIVE, alarm.getAlarmActive());
@@ -204,7 +270,7 @@ public class Database extends SQLiteOpenHelper {
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
-						
+
 			alarm.setDifficulty(Difficulty.values()[c.getInt(5)]);
 			alarm.setAlarmTonePath(c.getString(6));
 			alarm.setVibrate(c.getInt(7)==1);

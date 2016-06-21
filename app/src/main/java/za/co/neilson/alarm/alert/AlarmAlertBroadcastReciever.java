@@ -30,12 +30,15 @@ public class AlarmAlertBroadcastReciever extends BroadcastReceiver {
 		StaticWakeLock.lockOn(context);
 		Bundle bundle = intent.getExtras();
 		final Alarm alarm = (Alarm) bundle.getSerializable("alarm");
+		String email = bundle.getString("email");
+
 
 		Intent mathAlarmAlertActivityIntent;
 
 		mathAlarmAlertActivityIntent = new Intent(context, AlarmAlertActivity.class);
 
 		mathAlarmAlertActivityIntent.putExtra("alarm", alarm);
+		mathAlarmAlertActivityIntent.putExtra("email", email);
 
 		mathAlarmAlertActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 

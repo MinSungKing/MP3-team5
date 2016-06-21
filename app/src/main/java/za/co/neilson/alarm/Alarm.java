@@ -60,19 +60,19 @@ public class Alarm implements Serializable {
 		public String toString() {
 			switch(this.ordinal()){
 				case 0:
-					return "Sunday";
+					return "SUNDAY";
 				case 1:
-					return "Monday";
+					return "MONDAY";
 				case 2:
-					return "Tuesday";
+					return "TUESDAY";
 				case 3:
-					return "Wednesday";
+					return "WEDNESDAY";
 				case 4:
-					return "Thursday";
+					return "THURSDAY";
 				case 5:
-					return "Friday";
+					return "FRIDAY";
 				case 6:
-					return "Saturday";
+					return "SATURDAY";
 			}
 			return super.toString();
 		}
@@ -82,12 +82,27 @@ public class Alarm implements Serializable {
 	private int id;
 	private Boolean alarmActive = true;
 	private Calendar alarmTime = Calendar.getInstance();
-	private Day[] days = {Day.MONDAY,Day.TUESDAY,Day.WEDNESDAY,Day.THURSDAY,Day.FRIDAY,Day.SATURDAY,Day.SUNDAY};	
+	private Day[] days = {Day.MONDAY,Day.TUESDAY,Day.WEDNESDAY,Day.THURSDAY,Day.FRIDAY,Day.SATURDAY,Day.SUNDAY};
+	Day a = Day.FRIDAY;
+
 	private String alarmTonePath = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
 	private Boolean vibrate = true;
 	private String alarmName = "Alarm Clock";
 	private Difficulty difficulty = Difficulty.EASY;
-	
+
+	private String email;
+
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+
+
 	public Alarm() {
 
 	}

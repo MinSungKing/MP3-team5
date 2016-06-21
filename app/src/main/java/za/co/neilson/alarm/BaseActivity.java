@@ -12,11 +12,13 @@
 package za.co.neilson.alarm;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 import za.co.neilson.alarm.preferences.AlarmPreferencesActivity;
 import za.co.neilson.alarm.service.AlarmServiceBroadcastReciever;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
@@ -26,30 +28,37 @@ import android.view.MenuItem;
 import android.view.ViewConfiguration;
 import android.widget.Toast;
 
+import org.apache.http.NameValuePair;
+
 public abstract class BaseActivity  extends ActionBarActivity implements android.view.View.OnClickListener{
+
+	List<NameValuePair> params;
+	SharedPreferences pref;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+
+		pref = getSharedPreferences("AppPref", MODE_PRIVATE);
+
 		try {
-	        ViewConfiguration config = ViewConfiguration.get(this);	        
-	        Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-	        if(menuKeyField != null) {
-	            menuKeyField.setAccessible(true);
-	            menuKeyField.setBoolean(config, false);
-	        }
-	    } catch (Exception ex) {
-	        // Ignore
-	    }
+			ViewConfiguration config = ViewConfiguration.get(this);
+			Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+			if(menuKeyField != null) {
+				menuKeyField.setAccessible(true);
+				menuKeyField.setBoolean(config, false);
+			}
+		} catch (Exception ex) {
+			// Ignore
+		}
 	}
-	
+
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {		
+	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu items for use in the action bar
-	    MenuInflater inflater = getMenuInflater();
-	    inflater.inflate(R.menu.menu, menu);
-	    return super.onCreateOptionsMenu(menu);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu, menu);
+		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
@@ -60,40 +69,41 @@ public abstract class BaseActivity  extends ActionBarActivity implements android
 			case R.id.menu_item_join:
 				startDialog();
 				break;
-		case R.id.menu_item_new:
-			startAlarmPreferencesActivity();
-			break;
-		case R.id.menu_item_rate:
-			url = "market://details?id=" + getPackageName();
-			intent = new Intent(Intent.ACTION_VIEW);
-			intent.setData(Uri.parse(url));
-			try {
-				startActivity(intent);
-			} catch (ActivityNotFoundException e) {
-				Toast.makeText(this, "Couldn't launch the market", Toast.LENGTH_LONG).show();
-			}
-			break;
-		case R.id.menu_item_website:
-			url = "http://www.neilson.co.za";
-			intent = new Intent(Intent.ACTION_VIEW);
-			intent.setData(Uri.parse(url));
-			try {
-				startActivity(intent);
-			} catch (ActivityNotFoundException e) {
-				Toast.makeText(this, "Couldn't launch the website", Toast.LENGTH_LONG).show();
-			}
-			break;
-		case R.id.menu_item_report:
-			
-			url = "https://github.com/SheldonNeilson/Android-Alarm-Clock/issues";
-			intent = new Intent(Intent.ACTION_VIEW);
-			intent.setData(Uri.parse(url));
-			try {
-				startActivity(intent);
-			} catch (ActivityNotFoundException e) {
-				Toast.makeText(this, "Couldn't launch the bug reporting website", Toast.LENGTH_LONG).show();
-			}
-			
+			case R.id.menu_item_new:
+
+				startAlarmPreferencesActivity();
+				break;
+			case R.id.menu_item_rate:
+				url = "market://details?id=" + getPackageName();
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(Uri.parse(url));
+				try {
+					startActivity(intent);
+				} catch (ActivityNotFoundException e) {
+					Toast.makeText(this, "Couldn't launch the market", Toast.LENGTH_LONG).show();
+				}
+				break;
+			case R.id.menu_item_website:
+				url = "http://www.neilson.co.za";
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(Uri.parse(url));
+				try {
+					startActivity(intent);
+				} catch (ActivityNotFoundException e) {
+					Toast.makeText(this, "Couldn't launch the website", Toast.LENGTH_LONG).show();
+				}
+				break;
+			case R.id.menu_item_report:
+
+				url = "https://github.com/SheldonNeilson/Android-Alarm-Clock/issues";
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(Uri.parse(url));
+				try {
+					startActivity(intent);
+				} catch (ActivityNotFoundException e) {
+					Toast.makeText(this, "Couldn't launch the bug reporting website", Toast.LENGTH_LONG).show();
+				}
+
 			/*
 			Intent send = new Intent(Intent.ACTION_SENDTO);
 			String uriText;
@@ -117,7 +127,7 @@ public abstract class BaseActivity  extends ActionBarActivity implements android
 			send.setData(emalUri);
 			startActivity(Intent.createChooser(send, "Send mail..."));
 			*/
-			break;
+				break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
